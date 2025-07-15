@@ -7,6 +7,8 @@ import pandas as pd
 import psycopg2
 import json
 import os
+from playwright.sync_api import sync_playwright
+
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
@@ -34,6 +36,28 @@ DB_CONFIG = {
 
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
+
+
+
+
+
+"""
+@app.get("/verificar_paises_sancionados")
+def verificar_paises_sancionados():
+    # 1. Scraping
+    paises_scrapeados = scrapear_paises_sancionados()
+
+    # 2. Obtener países de la tabla
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT nombre FROM paises_organizacion")
+    paises_org = [row[0].strip() for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+
+    # 3. Comparar
+    en_sancion = [p for p in paises_org if p in paises_scrapeados]
+    return {"en_sancion": en_sancion, "cantidad": len(en_sancion)} """
 
 @app.post("/export_excel")
 async def export_excel(request: Request):
@@ -67,7 +91,7 @@ def get_controles():
         elif cantidad > 0:
             return "Atención"
         else:
-            return "Cumpliendo"
+            return "Cumpliendo" # sin anomalias detectadas
 
     conn = get_connection()
     cur = conn.cursor()
@@ -97,23 +121,10 @@ def get_controles():
             control["estado"] = calcular_estado(cantidad_anomalias)
         else:
             control["estado"] = "Cumpliendo"
-            control["accion_requerida"] = None  # Limpia el texto si no hay anomalías
+            control["accion_requerida"] = None  # Si esta cumpliendo no deberian existir anomalias
 
     cur.close()
     conn.close()
     return controles
 
-"""
-@app.get("/controles")
-def get_controles():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM controles")
-    rows = cur.fetchall()
-    columns = [desc[0] for desc in cur.description]
-    data = [dict(zip(columns, row)) for row in rows]
-    cur.close()
-    conn.close()
-    return data
 
-"""
