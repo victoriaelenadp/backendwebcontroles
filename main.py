@@ -8,13 +8,16 @@ import psycopg2
 import json
 import os
 from playwright.sync_api import sync_playwright
-
+import requests
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
 load_dotenv()
 
 app = FastAPI()
+
+API_KEY = os.getenv("OPENSANCTIONS_API_KEY")
+MATCH_URL = "https://api.opensanctions.org/match/sanctions?algorithm=best"
 
 # CORS
 app.add_middleware(
@@ -39,25 +42,6 @@ def get_connection():
 
 
 
-
-
-"""
-@app.get("/verificar_paises_sancionados")
-def verificar_paises_sancionados():
-    # 1. Scraping
-    paises_scrapeados = scrapear_paises_sancionados()
-
-    # 2. Obtener países de la tabla
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT nombre FROM paises_organizacion")
-    paises_org = [row[0].strip() for row in cur.fetchall()]
-    cur.close()
-    conn.close()
-
-    # 3. Comparar
-    en_sancion = [p for p in paises_org if p in paises_scrapeados]
-    return {"en_sancion": en_sancion, "cantidad": len(en_sancion)} """
 
 @app.post("/export_excel")
 async def export_excel(request: Request):
@@ -128,3 +112,60 @@ def get_controles():
     return controles
 
 
+@app.get("/normativas")
+def get_normativas():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM normativas")
+    rows = cur.fetchall()
+    columns = [desc[0] for desc in cur.description]
+    cur.close()
+    conn.close()
+    return [dict(zip(columns, row)) for row in rows]
+
+
+@app.get("/procesos")
+def get_procesos():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Obtener todos los procesos
+    cur.execute("SELECT * FROM procesos")
+    procesos_raw = cur.fetchall()
+    procesos_columns = [desc[0] for desc in cur.description]
+
+    procesos = []
+    for row in procesos_raw:
+        proceso = dict(zip(procesos_columns, row))
+        
+        # Buscar normativas asociadas a este proceso
+        cur.execute("""
+            SELECT normativa_id 
+            FROM normativa_proceso 
+            WHERE proceso_id = %s
+        """, (proceso["id"],))
+        normativa_ids = [r[0] for r in cur.fetchall()]
+        proceso["normativas"] = normativa_ids
+
+        procesos.append(proceso)
+
+    cur.close()
+    conn.close()
+    return procesos
+
+
+@app.get("/controles/{control_id}/normativas")
+def get_normativas_por_control(control_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT n.id, n.nombre, n.descripcion
+        FROM control_normativa cn
+        JOIN normativas n ON cn.normativa_id = n.id
+        WHERE cn.control_id = %s
+    """, (control_id,))
+    rows = cur.fetchall()
+    columns = [desc[0] for desc in cur.description]
+    cur.close()
+    conn.close()
+    return [dict(zip(columns, row)) for row in rows]
