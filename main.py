@@ -38,6 +38,18 @@ DB_CONFIG = {
 }
 
 def get_connection():
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    if DATABASE_URL:
+        # psycopg2 acepta la URL completa
+        return psycopg2.connect(DATABASE_URL)
+    # fallback a variables individuales (si las usas)
+    DB_CONFIG = {
+        "host": os.getenv("DB_HOST"),
+        "port": os.getenv("DB_PORT"),
+        "database": os.getenv("DB_NAME"),
+        "user": os.getenv("DB_USER"),
+        "password": os.getenv("DB_PASSWORD")
+    }
     return psycopg2.connect(**DB_CONFIG)
 
 
