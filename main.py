@@ -22,11 +22,16 @@ MATCH_URL = "https://api.opensanctions.org/match/sanctions?algorithm=best"
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",          # desarrollo local
+        "https://webcontroles.onrender.com",  # frontend desplegado en Render
+      
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Configuración desde .env
 DB_CONFIG = {
