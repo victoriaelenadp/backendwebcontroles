@@ -10,6 +10,10 @@ import os
 from playwright.sync_api import sync_playwright
 import requests
 from dotenv import load_dotenv
+from fastapi.staticfiles import StaticFiles
+
+
+
 
 # Cargar variables de entorno
 load_dotenv()
@@ -24,7 +28,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",          # desarrollo local
-        "https://webcontroles.onrender.com",  # frontend desplegado en Render
+        "https://webcontroles.onrender.com/",  # frontend desplegado en Render
       
     ],
     allow_credentials=True,
@@ -186,3 +190,6 @@ def get_normativas_por_control(control_id: int):
     cur.close()
     conn.close()
     return [dict(zip(columns, row)) for row in rows]
+
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
