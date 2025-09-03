@@ -28,7 +28,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",          # desarrollo local
-        "https://webcontroles.onrender.com",  # frontend desplegado en Render
+        "https://webcontroles.onrender.com/",  # frontend desplegado en Render
       
     ],
     allow_credentials=True,
